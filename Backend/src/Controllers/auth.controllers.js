@@ -1,6 +1,7 @@
 import {
     registerUser,
     loginUser,
+    refreshUserToken
 } from "../Services/auth.service.js";
 
 
@@ -78,3 +79,29 @@ export const loginController = async (req, res, next) => {
     }
 };
 
+
+
+export const refreshTokenController = async (req, res, next) => {
+    try {
+        const { refreshToken } = req.cookies;
+
+        const accessToken = await refreshUserToken(refreshToken);
+
+        res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite:
+                process.env.NODE_ENV === "production"
+                    ? "none"
+                    : "lax",
+            maxAge: 15 * 60 * 1000,
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Access token refreshed successfully",
+        });
+    } catch (error) {
+        next(error);
+    }
+};

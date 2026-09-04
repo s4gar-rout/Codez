@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { registerController,loginController } from "../Controllers/auth.controllers.js";
+import { registerController,loginController,refreshTokenController } from "../Controllers/auth.controllers.js";
 import { validateRequest } from "../Middlewares/validate.middleware.js";
 import { registerValidator,loginValidator } from "../Validators/auth.validators.js";
 
@@ -25,5 +25,12 @@ router.post(
  * @access Public
  */
 router.post("/login", loginValidator, validateRequest, loginController);
+
+
+
+router.post(
+    "/refresh-token",
+    refreshTokenController
+);
 
 export default router;
