@@ -1,20 +1,24 @@
 import dns from "dns";
 dns.setServers(["8.8.8.8"]);
-import dotenv from "dotenv";
 import app from "./app.js";
 import { connectDatabase } from "./Configs/db.js";
-dotenv.config();
-connectDatabase();
+import redis from "./Configs/redis.js";
+import { env } from "./Configs/config.js";
 
-const PORT = process.env.PORT || 3000;
 
-app.get("/api/health", (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: "CODEZ API is running 🚀",
-    });
-});
+const startServer = async () => {
+    try {
+        await connectDatabase();
 
-app.listen(PORT, () => {
-    console.log(`🚀 CODEZ server running on port ${PORT}`);
-});
+        await redis.connect();
+
+        app.listen(env.PORT, () => {
+            console.log(`CODEZ server running on port ${env.PORT}`);
+        });
+    } catch (error) {
+        console.error("Server startup failed:", error.message);
+        process.exit(1);
+    }
+};
+
+startServer();

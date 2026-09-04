@@ -31,7 +31,23 @@ if(!process.env.ACCESS_TOKEN_EXPIRES_IN) {
 
 if(!process.env.REFRESH_TOKEN_EXPIRES_IN) {
     throw new Error("REFRESH_TOKEN_EXPIRES_IN is not defined in the environment variables");
-}       
+}
+
+if(!process.env.REDIS_HOST) {
+    throw new Error("REDIS_HOST is not defined in the environment variables");
+}
+
+if(!process.env.REDIS_PORT) {
+    throw new Error("REDIS_PORT is not defined in the environment variables");
+}
+
+if(!process.env.REDIS_USERNAME) {
+    throw new Error("REDIS_USERNAME is not defined in the environment variables");
+}
+
+if(!process.env.REDIS_PASSWORD) {
+    throw new Error("REDIS_PASSWORD is not defined in the environment variables");
+}
 
 export const env = {
     NODE_ENV: process.env.NODE_ENV || "development",
@@ -42,4 +58,8 @@ export const env = {
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
     ACCESS_TOKEN_EXPIRES_IN: process.env.ACCESS_TOKEN_EXPIRES_IN || "15m",
     REFRESH_TOKEN_EXPIRES_IN: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
+    REDIS_HOST: process.env.REDIS_HOST || "localhost",
+    REDIS_PORT: Number(process.env.REDIS_PORT) || 6379,
+    REDIS_USERNAME: process.env.REDIS_USERNAME,
+    REDIS_PASSWORD: process.env.REDIS_PASSWORD,
 };
