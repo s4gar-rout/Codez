@@ -14,7 +14,10 @@ import {
     compareOtp,
 } from "../Utils/otp.utils.js";
 
-import { sendVerificationEmail } from "./email.service.js";
+import {
+    sendVerificationEmail,
+    sendForgotPasswordEmail,
+} from "./email.service.js";
 
 const OTP_EXPIRY = 10 * 60;
 
@@ -209,4 +212,123 @@ export const verifyEmailOtp = async ({
     await deleteRedis(getCooldownKey(user._id));
 
     return user;
+};
+
+const getForgotPasswordOtpKey = (userId) =>
+    `forgot-password:otp:${userId}`;
+
+const getForgotPasswordAttemptKey = (userId) =>
+    `forgot-password:attempts:${userId}`;
+
+export const createAndSendForgotPasswordOtp = async ({
+    user,
+}) => {
+    const otp = generateOtp();
+    const hashedOtp = hashOtp(otp);
+
+    await setRedis(
+        getForgotPasswordOtpKey(user._id),
+        {
+            otp: hashedOtp,
+            createdAt: new Date().toISOString(),
+        },
+        OTP_EXPIRY
+    );
+
+    await deleteRedis(
+        getForgotPasswordAttemptKey(user._id)
+    );
+
+    try {
+        await sendForgotPasswordEmail({
+            email: user.email,
+            username: user.username,
+            otp,
+        });
+    } catch (error) {
+        await deleteRedis(
+            getForgotPasswordOtpKey(user._id)
+        );
+
+        throw error;
+    }
+};
+
+export const verifyForgotPasswordOtp = async ({
+    user,
+    otp,
+}) => {
+    const otpData = await getRedis(
+        getForgotPasswordOtpKey(user._id)
+    );
+
+    if (!otpData) {
+        const error = new Error(
+            "OTP expired or not found"
+        );
+
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const attempts = await incrementRedis(
+        getForgotPasswordAttemptKey(user._id)
+    );
+
+    if (attempts === 1) {
+        await expireRedis(
+            getForgotPasswordAttemptKey(user._id),
+            OTP_EXPIRY
+        );
+    }
+
+    if (attempts > MAX_VERIFY_ATTEMPTS) {
+        await deleteRedis(
+            getForgotPasswordOtpKey(user._id)
+        );
+
+        await deleteRedis(
+            getForgotPasswordAttemptKey(user._id)
+        );
+
+        const error = new Error(
+            "Too many incorrect attempts. Please request a new OTP"
+        );
+
+        error.statusCode = 429;
+        throw error;
+    }
+
+    let isValid = false;
+
+    try {
+        isValid = compareOtp(
+            otp,
+            otpData.otp
+        );
+    } catch {
+        isValid = false;
+    }
+
+    if (!isValid) {
+        const remainingAttempts =
+            MAX_VERIFY_ATTEMPTS - attempts;
+
+        const error = new Error(
+            `Invalid OTP. ${remainingAttempts} attempts remaining`
+        );
+
+        error.statusCode = 400;
+        throw error;
+    }
+
+    await deleteRedis(
+        getForgotPasswordOtpKey(user._id)
+    );
+
+    await deleteRedis(
+        getForgotPasswordAttemptKey(user._id)
+    );
+
+    return true;
 };

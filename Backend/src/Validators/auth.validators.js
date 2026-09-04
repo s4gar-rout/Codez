@@ -54,3 +54,39 @@ export const verifyEmailValidator = [
         .matches(/^\d{6}$/)
         .withMessage("OTP must be exactly 6 digits"),
 ];
+
+
+export const forgotPasswordValidator = [
+    body("email")
+        .trim()
+        .notEmpty()
+        .withMessage("Email is required")
+        .isEmail()
+        .withMessage("Please provide a valid email")
+        .normalizeEmail(),
+];
+
+export const resetPasswordValidator = [
+    body("email")
+        .trim()
+        .notEmpty()
+        .withMessage("Email is required")
+        .isEmail()
+        .withMessage("Please provide a valid email")
+        .normalizeEmail(),
+
+    body("otp")
+        .trim()
+        .notEmpty()
+        .withMessage("OTP is required")
+        .matches(/^\d{6}$/)
+        .withMessage("OTP must be exactly 6 digits"),
+
+    body("newPassword")
+        .notEmpty()
+        .withMessage("New password is required")
+        .isLength({ min: 8, max: 72 })
+        .withMessage(
+            "Password must be between 8 and 72 characters"
+        ),
+];

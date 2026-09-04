@@ -2,8 +2,12 @@ import { Router } from "express";
 
 import { registerController,loginController,refreshTokenController,logoutController,getCurrentUserController } from "../Controllers/auth.controllers.js";
 import { validateRequest } from "../Middlewares/validate.middleware.js";
-import { registerValidator,loginValidator,verifyEmailValidator } from "../Validators/auth.validators.js";
+import { registerValidator,loginValidator,verifyEmailValidator,forgotPasswordValidator,resetPasswordValidator } from "../Validators/auth.validators.js";
 import { authMiddleware } from "../Middlewares/auth.middleware.js";
+import {
+    forgotPasswordController,
+    resetPasswordController,
+} from "../Controllers/password.controller.js";
 import {
     verifyEmailController,
     resendVerificationController,
@@ -71,5 +75,20 @@ router.post(
     "/resend-verification",
     authMiddleware,
     resendVerificationController
+);
+
+
+router.post(
+    "/forgot-password",
+    forgotPasswordValidator,
+    validateRequest,
+    forgotPasswordController
+);
+
+router.post(
+    "/reset-password",
+    resetPasswordValidator,
+    validateRequest,
+    resetPasswordController
 );
 export default router;
