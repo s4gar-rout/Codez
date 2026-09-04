@@ -13,7 +13,7 @@ import {
     verifyEmailController,
     resendVerificationController,
 } from "../Controllers/verification.controller.js";
-
+import { requireRole } from "../Middlewares/role.middleware.js";
 
 
 const router = Router();
@@ -102,5 +102,19 @@ router.post(
     changePasswordValidator,
     validateRequest,
     changePasswordController
+);
+
+
+router.get(
+    "/admin-test",
+    authMiddleware,
+    requireRole("admin"),
+    (req, res) => {
+        return res.status(200).json({
+            success: true,
+            message: "Welcome Admin! You have access to this route.",
+            user: req.user,
+        });
+    }
 );
 export default router;

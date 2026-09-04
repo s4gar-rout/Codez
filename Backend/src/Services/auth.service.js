@@ -1,6 +1,12 @@
 import User from "../Models/user.model.js";
+
 import crypto from "crypto";
-import { setRedis,getRedis,deleteRedis } from "../Utils/redis.utils.js";
+
+import {
+    setRedis,
+    getRedis,
+    deleteRedis,
+} from "../Utils/redis.utils.js";
 
 import {
     generateAccessToken,
@@ -8,9 +14,6 @@ import {
     verifyRefreshToken,
 } from "../Utils/token.utils.js";
 
-import {
-    createAndSendVerificationOtp,
-} from "./verification.service.js";
 
 export const registerUser = async ({
     username,
@@ -42,25 +45,6 @@ export const registerUser = async ({
         password,
     });
 
-    try {
-        await createAndSendVerificationOtp({
-            user,
-        });
-    } catch (error) {
-        console.error(
-            "Verification email failed:",
-            error.message
-        );
-
-        const emailError = new Error(
-            "Account created but verification email could not be sent. Please request a new OTP."
-        );
-
-        emailError.statusCode = 503;
-
-        throw emailError;
-    }
-
     return {
         id: user._id,
         username: user.username,
@@ -72,51 +56,71 @@ export const registerUser = async ({
     };
 };
 
-export const loginUser = async ({ email, password }) => {
+
+export const loginUser = async ({
+    email,
+    password,
+}) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-        const error = new Error("Invalid email or password");
+        const error = new Error(
+            "Invalid email or password"
+        );
+
         error.statusCode = 401;
+
         throw error;
     }
 
     if (!user.isActive) {
-        const error = new Error("Your account is inactive");
+        const error = new Error(
+            "Your account is inactive"
+        );
+
         error.statusCode = 403;
+
         throw error;
     }
 
-    const isPasswordValid = await user.comparePassword(password);
+    const isPasswordValid =
+        await user.comparePassword(password);
 
     if (!isPasswordValid) {
-        const error = new Error("Invalid email or password");
+        const error = new Error(
+            "Invalid email or password"
+        );
+
         error.statusCode = 401;
+
         throw error;
     }
 
     user.lastLoginAt = new Date();
+
     await user.save();
 
-    // Create unique session for this login/device
     const sessionId = crypto.randomUUID();
 
-    const accessToken = generateAccessToken(
-        user._id,
-        sessionId
-    );
+    const accessToken =
+        generateAccessToken(
+            user._id,
+            sessionId,
+            user.role
+        );
 
-    const refreshToken = generateRefreshToken(
-        user._id,
-        sessionId
-    );
+    const refreshToken =
+        generateRefreshToken(
+            user._id,
+            sessionId
+        );
 
-    // Store session in Redis
     await setRedis(
         `session:${sessionId}`,
         {
             userId: user._id.toString(),
-            createdAt: new Date().toISOString(),
+            createdAt:
+                new Date().toISOString(),
         },
         7 * 24 * 60 * 60
     );
@@ -128,34 +132,55 @@ export const loginUser = async ({ email, password }) => {
             email: user.email,
             role: user.role,
             avatar: user.avatar,
-            isEmailVerified: user.isEmailVerified,
+            isEmailVerified:
+                user.isEmailVerified,
         },
+
         accessToken,
         refreshToken,
     };
 };
 
-export const refreshUserToken = async (refreshToken) => {
+
+export const refreshUserToken = async (
+    refreshToken
+) => {
     if (!refreshToken) {
-        const error = new Error("Refresh token is required");
+        const error = new Error(
+            "Refresh token is required"
+        );
+
         error.statusCode = 401;
+
         throw error;
     }
 
     let decoded;
 
     try {
-        decoded = verifyRefreshToken(refreshToken);
+        decoded =
+            verifyRefreshToken(refreshToken);
     } catch (error) {
-        const authError = new Error("Invalid or expired refresh token");
+        const authError = new Error(
+            "Invalid or expired refresh token"
+        );
+
         authError.statusCode = 401;
+
         throw authError;
     }
 
     // Make sure this is actually a refresh token
-    if (decoded.type !== "refresh" || !decoded.sessionId) {
-        const error = new Error("Invalid refresh token");
+    if (
+        decoded.type !== "refresh" ||
+        !decoded.sessionId
+    ) {
+        const error = new Error(
+            "Invalid refresh token"
+        );
+
         error.statusCode = 401;
+
         throw error;
     }
 
@@ -168,47 +193,70 @@ export const refreshUserToken = async (refreshToken) => {
         const error = new Error(
             "Session expired or revoked. Please login again"
         );
+
         error.statusCode = 401;
+
         throw error;
     }
 
     // Make sure session belongs to the same user
-    if (session.userId !== decoded.userId) {
-        const error = new Error("Invalid session");
+    if (
+        session.userId !== decoded.userId
+    ) {
+        const error = new Error(
+            "Invalid session"
+        );
+
         error.statusCode = 401;
+
         throw error;
     }
 
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(
+        decoded.userId
+    );
 
     if (!user) {
-        const error = new Error("User not found");
+        const error = new Error(
+            "User not found"
+        );
+
         error.statusCode = 401;
+
         throw error;
     }
 
     if (!user.isActive) {
-        const error = new Error("Your account is inactive");
+        const error = new Error(
+            "Your account is inactive"
+        );
+
         error.statusCode = 403;
+
         throw error;
     }
 
-    const accessToken = generateAccessToken(
-        user._id,
-        decoded.sessionId
-    );
+    const accessToken =
+        generateAccessToken(
+            user._id,
+            decoded.sessionId,
+            user.role
+        );
 
     return accessToken;
 };
 
 
-export const logoutUser = async (refreshToken) => {
+export const logoutUser = async (
+    refreshToken
+) => {
     if (!refreshToken) {
         return;
     }
 
     try {
-        const decoded = verifyRefreshToken(refreshToken);
+        const decoded =
+            verifyRefreshToken(refreshToken);
 
         if (decoded.sessionId) {
             await deleteRedis(
@@ -221,16 +269,21 @@ export const logoutUser = async (refreshToken) => {
     }
 };
 
-export const getCurrentUser = async (userId) => {
+
+export const getCurrentUser = async (
+    userId
+) => {
     const user = await User.findById(userId)
-        .select(
-            "-password -__v"
-        )
+        .select("-password -__v")
         .lean();
 
     if (!user) {
-        const error = new Error("User not found");
+        const error = new Error(
+            "User not found"
+        );
+
         error.statusCode = 404;
+
         throw error;
     }
 

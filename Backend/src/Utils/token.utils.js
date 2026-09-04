@@ -1,12 +1,16 @@
 import jwt from "jsonwebtoken";
-
 import { env } from "../Configs/config.js";
 
-export const generateAccessToken = (userId, sessionId) => {
+export const generateAccessToken = (
+    userId,
+    sessionId,
+    role
+) => {
     return jwt.sign(
         {
             userId: userId.toString(),
             sessionId,
+            role,
             type: "access",
         },
         env.JWT_ACCESS_SECRET,
@@ -16,7 +20,10 @@ export const generateAccessToken = (userId, sessionId) => {
     );
 };
 
-export const generateRefreshToken = (userId, sessionId) => {
+export const generateRefreshToken = (
+    userId,
+    sessionId
+) => {
     return jwt.sign(
         {
             userId: userId.toString(),
