@@ -1,8 +1,9 @@
 import { Router } from "express";
 
-import { registerController,loginController,refreshTokenController,logoutController } from "../Controllers/auth.controllers.js";
+import { registerController,loginController,refreshTokenController,logoutController,getCurrentUserController } from "../Controllers/auth.controllers.js";
 import { validateRequest } from "../Middlewares/validate.middleware.js";
 import { registerValidator,loginValidator } from "../Validators/auth.validators.js";
+import { authMiddleware } from "../Middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -45,5 +46,13 @@ router.post(
 router.post(
     "/logout",
     logoutController
+);
+
+
+
+router.get(
+    "/me",
+    authMiddleware,
+    getCurrentUserController
 );
 export default router;

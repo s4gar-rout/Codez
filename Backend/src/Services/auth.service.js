@@ -188,3 +188,19 @@ export const logoutUser = async (refreshToken) => {
         // Cookies controller mein clear ho jayengi.
     }
 };
+
+export const getCurrentUser = async (userId) => {
+    const user = await User.findById(userId)
+        .select(
+            "-password -__v"
+        )
+        .lean();
+
+    if (!user) {
+        const error = new Error("User not found");
+        error.statusCode = 404;
+        throw error;
+    }
+
+    return user;
+};

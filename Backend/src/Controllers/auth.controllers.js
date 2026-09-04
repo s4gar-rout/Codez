@@ -3,6 +3,7 @@ import {
     loginUser,
     refreshUserToken,
     logoutUser,
+    getCurrentUser,
 } from "../Services/auth.service.js";
 
 
@@ -143,6 +144,22 @@ export const logoutController = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             message: "Logout successful",
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getCurrentUserController = async (req, res, next) => {
+    try {
+        const user = await getCurrentUser(req.user.userId);
+
+        return res.status(200).json({
+            success: true,
+            message: "Current user fetched successfully",
+            data: {
+                user,
+            },
         });
     } catch (error) {
         next(error);
