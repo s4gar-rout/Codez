@@ -1,5 +1,7 @@
 import User from "../Models/user.model.js";
-
+import {
+    changeUserPassword,
+} from "../Services/password.service.js";
 import {
     createAndSendForgotPasswordOtp,
     verifyForgotPasswordOtp,
@@ -70,6 +72,32 @@ export const resetPasswordController = async (
         return res.status(200).json({
             success: true,
             message: "Password reset successfully",
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const changePasswordController = async (
+    req,
+    res,
+    next
+) => {
+    try {
+        const {
+            currentPassword,
+            newPassword,
+        } = req.body;
+
+        await changeUserPassword({
+            userId: req.user.userId,
+            currentPassword,
+            newPassword,
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Password changed successfully",
         });
     } catch (error) {
         next(error);
