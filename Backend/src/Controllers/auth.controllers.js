@@ -1,7 +1,8 @@
 import {
     registerUser,
     loginUser,
-    refreshUserToken
+    refreshUserToken,
+    logoutUser,
 } from "../Services/auth.service.js";
 
 
@@ -34,9 +35,10 @@ export const registerController = async (req, res, next) => {
 };
 
 
-
 /**
- * @POST api/auth/
+ * @POST api/auth/login
+ * @description Login a user
+ * @access Public
  * 
  */
 
@@ -80,7 +82,10 @@ export const loginController = async (req, res, next) => {
 };
 
 
-
+/**
+ * 
+ * 
+ */
 export const refreshTokenController = async (req, res, next) => {
     try {
         const { refreshToken } = req.cookies;
@@ -100,6 +105,44 @@ export const refreshTokenController = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             message: "Access token refreshed successfully",
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+/**
+ * @POST
+ * 
+ */
+export const logoutController = async (req, res, next) => {
+    try {
+        const { refreshToken } = req.cookies;
+
+        await logoutUser(refreshToken);
+
+        res.clearCookie("accessToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite:
+                process.env.NODE_ENV === "production"
+                    ? "none"
+                    : "lax",
+        });
+
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite:
+                process.env.NODE_ENV === "production"
+                    ? "none"
+                    : "lax",
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Logout successful",
         });
     } catch (error) {
         next(error);

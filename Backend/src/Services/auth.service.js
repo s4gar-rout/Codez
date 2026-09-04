@@ -1,4 +1,6 @@
 import User from "../Models/user.model.js";
+import crypto from "crypto";
+import { setRedis,getRedis,deleteRedis } from "../Utils/redis.utils.js";
 
 import {
     generateAccessToken,
@@ -64,8 +66,28 @@ export const loginUser = async ({ email, password }) => {
     user.lastLoginAt = new Date();
     await user.save();
 
-    const accessToken = generateAccessToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
+    // Create unique session for this login/device
+    const sessionId = crypto.randomUUID();
+
+    const accessToken = generateAccessToken(
+        user._id,
+        sessionId
+    );
+
+    const refreshToken = generateRefreshToken(
+        user._id,
+        sessionId
+    );
+
+    // Store session in Redis
+    await setRedis(
+        `session:${sessionId}`,
+        {
+            userId: user._id.toString(),
+            createdAt: new Date().toISOString(),
+        },
+        7 * 24 * 60 * 60
+    );
 
     return {
         user: {
@@ -98,6 +120,33 @@ export const refreshUserToken = async (refreshToken) => {
         throw authError;
     }
 
+    // Make sure this is actually a refresh token
+    if (decoded.type !== "refresh" || !decoded.sessionId) {
+        const error = new Error("Invalid refresh token");
+        error.statusCode = 401;
+        throw error;
+    }
+
+    // Check session in Redis
+    const session = await getRedis(
+        `session:${decoded.sessionId}`
+    );
+
+    if (!session) {
+        const error = new Error(
+            "Session expired or revoked. Please login again"
+        );
+        error.statusCode = 401;
+        throw error;
+    }
+
+    // Make sure session belongs to the same user
+    if (session.userId !== decoded.userId) {
+        const error = new Error("Invalid session");
+        error.statusCode = 401;
+        throw error;
+    }
+
     const user = await User.findById(decoded.userId);
 
     if (!user) {
@@ -112,7 +161,30 @@ export const refreshUserToken = async (refreshToken) => {
         throw error;
     }
 
-    const accessToken = generateAccessToken(user._id);
+    const accessToken = generateAccessToken(
+        user._id,
+        decoded.sessionId
+    );
 
     return accessToken;
+};
+
+
+export const logoutUser = async (refreshToken) => {
+    if (!refreshToken) {
+        return;
+    }
+
+    try {
+        const decoded = verifyRefreshToken(refreshToken);
+
+        if (decoded.sessionId) {
+            await deleteRedis(
+                `session:${decoded.sessionId}`
+            );
+        }
+    } catch (error) {
+        // Token invalid/expired hai to bhi logout successful hona chahiye.
+        // Cookies controller mein clear ho jayengi.
+    }
 };

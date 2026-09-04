@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { registerController,loginController,refreshTokenController } from "../Controllers/auth.controllers.js";
+import { registerController,loginController,refreshTokenController,logoutController } from "../Controllers/auth.controllers.js";
 import { validateRequest } from "../Middlewares/validate.middleware.js";
 import { registerValidator,loginValidator } from "../Validators/auth.validators.js";
 
@@ -27,10 +27,23 @@ router.post(
 router.post("/login", loginValidator, validateRequest, loginController);
 
 
-
+/**
+ * 
+ * 
+ */
 router.post(
     "/refresh-token",
     refreshTokenController
 );
 
+
+
+/**
+ * 
+ * 
+ */
+router.post(
+    "/logout",
+    logoutController
+);
 export default router;
