@@ -8,16 +8,29 @@ import {
     verifyRefreshToken,
 } from "../Utils/token.utils.js";
 
-export const registerUser = async ({ username, email, password }) => {
+import {
+    createAndSendVerificationOtp,
+} from "./verification.service.js";
+
+export const registerUser = async ({
+    username,
+    email,
+    password,
+}) => {
     const existingUser = await User.findOne({
         $or: [{ email }, { username }],
     }).lean();
 
     if (existingUser) {
         const field =
-            existingUser.email === email ? "Email" : "Username";
+            existingUser.email === email
+                ? "Email"
+                : "Username";
 
-        const error = new Error(`${field} already exists`);
+        const error = new Error(
+            `${field} already exists`
+        );
+
         error.statusCode = 409;
 
         throw error;
@@ -28,6 +41,25 @@ export const registerUser = async ({ username, email, password }) => {
         email,
         password,
     });
+
+    try {
+        await createAndSendVerificationOtp({
+            user,
+        });
+    } catch (error) {
+        console.error(
+            "Verification email failed:",
+            error.message
+        );
+
+        const emailError = new Error(
+            "Account created but verification email could not be sent. Please request a new OTP."
+        );
+
+        emailError.statusCode = 503;
+
+        throw emailError;
+    }
 
     return {
         id: user._id,

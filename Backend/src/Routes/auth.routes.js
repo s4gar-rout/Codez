@@ -2,8 +2,12 @@ import { Router } from "express";
 
 import { registerController,loginController,refreshTokenController,logoutController,getCurrentUserController } from "../Controllers/auth.controllers.js";
 import { validateRequest } from "../Middlewares/validate.middleware.js";
-import { registerValidator,loginValidator } from "../Validators/auth.validators.js";
+import { registerValidator,loginValidator,verifyEmailValidator } from "../Validators/auth.validators.js";
 import { authMiddleware } from "../Middlewares/auth.middleware.js";
+import {
+    verifyEmailController,
+    resendVerificationController,
+} from "../Controllers/verification.controller.js";
 
 const router = Router();
 
@@ -54,5 +58,18 @@ router.get(
     "/me",
     authMiddleware,
     getCurrentUserController
+);
+
+
+router.post(
+    "/verify-email",
+    verifyEmailValidator,
+    validateRequest,
+    verifyEmailController
+);
+router.post(
+    "/resend-verification",
+    authMiddleware,
+    resendVerificationController
 );
 export default router;

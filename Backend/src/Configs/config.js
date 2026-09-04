@@ -49,6 +49,18 @@ if(!process.env.REDIS_PASSWORD) {
     throw new Error("REDIS_PASSWORD is not defined in the environment variables");
 }
 
+if(!process.env.BREVO_API_KEY) {
+    throw new Error("BREVO_API_KEY is not defined in the environment variables");
+}
+
+if(!process.env.BREVO_SENDER_EMAIL) {
+    throw new Error("BREVO_SENDER_EMAIL is not defined in the environment variables");
+}
+
+if (!process.env.OTP_HASH_SECRET){
+    throw new Error("OTP_HASH_SECRET is not defined in the environment variables");
+}
+
 export const env = {
     NODE_ENV: process.env.NODE_ENV || "development",
     PORT: Number(process.env.PORT) || 3000,
@@ -62,4 +74,7 @@ export const env = {
     REDIS_PORT: Number(process.env.REDIS_PORT) || 6379,
     REDIS_USERNAME: process.env.REDIS_USERNAME,
     REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+    BREVO_API_KEY: process.env.BREVO_API_KEY,
+    BREVO_SENDER_EMAIL: process.env.BREVO_SENDER_EMAIL,
+    OTP_HASH_SECRET: process.env.OTP_HASH_SECRET,
 };

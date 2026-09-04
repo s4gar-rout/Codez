@@ -37,3 +37,20 @@ export const loginValidator = [
         .notEmpty()
         .withMessage("Password is required"),
 ];
+
+export const verifyEmailValidator = [
+    body("email")
+        .trim()
+        .notEmpty()
+        .withMessage("Email is required")
+        .isEmail()
+        .withMessage("Please provide a valid email")
+        .normalizeEmail(),
+
+    body("otp")
+        .trim()
+        .notEmpty()
+        .withMessage("OTP is required")
+        .matches(/^\d{6}$/)
+        .withMessage("OTP must be exactly 6 digits"),
+];
