@@ -14,7 +14,9 @@ import {
     resendVerificationController,
 } from "../Controllers/verification.controller.js";
 import { requireRole } from "../Middlewares/role.middleware.js";
-
+import {
+    deleteAccountController,
+} from "../Controllers/account.controller.js";
 
 const router = Router();
 
@@ -116,5 +118,11 @@ router.get(
             user: req.user,
         });
     }
+);
+
+router.delete(
+    "/account",
+    authMiddleware,
+    deleteAccountController
 );
 export default router;
